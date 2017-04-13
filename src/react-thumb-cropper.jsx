@@ -66,6 +66,7 @@ class ReactThumbCropper extends Component {
     this._moveImageStart = this._moveImageStart.bind(this)
     this._getCenter = this._getCenter.bind(this)
     this._zoom = this._zoom.bind(this)
+    this._uploadFile = this._uploadFile.bind(this)
   }
 
   handleOnDrop(event) {
@@ -73,17 +74,32 @@ class ReactThumbCropper extends Component {
     event.stopPropagation()
     if (event.dataTransfer.files.length) {
       const file = event.dataTransfer.files[0]
-      const fileReader = new FileReader()
-      this.image = new Image()
-      fileReader.readAsDataURL(file)
-      fileReader.onloadend = () => {
-        this.image.src = fileReader.result
-        const positionState = this._getUploadedImagePosition(this.image.width, this.image.height)
-        this.setState({
-          imageSrc: this.image.src,
-          ...positionState
-        })
-      }
+      this._uploadFile(file)
+    }
+  }
+
+  handleFileSelect(event) {
+    event.preventDefault()
+    let file
+    if (event.dataTransfer) {
+      file = event.dataTransfer.files[0]
+    } else {
+      file = event.target.files[0]
+    }
+    this._uploadFile(file)
+  }
+
+  _uploadFile(file) {
+    const fileReader = new FileReader()
+    this.image = new Image()
+    fileReader.readAsDataURL(file)
+    fileReader.onloadend = () => {
+      this.image.src = fileReader.result
+      const positionState = this._getUploadedImagePosition(this.image.width, this.image.height)
+      this.setState({
+        imageSrc: this.image.src,
+        ...positionState
+      })
     }
   }
 
@@ -112,7 +128,21 @@ class ReactThumbCropper extends Component {
       onDragOver={::this.handleOnDragOver}
       onDrop={::this.handleOnDrop}
     >
-      {this.props.dropHolder}
+      <input
+        style={{
+          display: 'none',
+        }}
+        type="file"
+        className="reactThumbCropper_inputFile"
+        id="reactThumbCropper_inputFile"
+        multiple={false}
+        onChange={::this.handleFileSelect}
+      />
+      <label
+        style={{cursor: 'pointer'}}
+        htmlFor="reactThumbCropper_inputFile">
+        {this.props.dropHolder}
+      </label>
     </div>
   }
 
