@@ -40,9 +40,12 @@ class ReactThumbCropper extends Component {
     moveInterval: PropTypes.number,
     cropAreaWidth: PropTypes.number,
     cropAreaHeight: PropTypes.number,
+    cropRadius: PropTypes.number,
+    cropBackgroundColor: PropTypes.string,
     zoomStep: PropTypes.number,
     defaultUploadedImageHeight: PropTypes.number,
-    dropHolder: PropTypes.element.isRequired
+    dropHolder: PropTypes.element.isRequired,
+    setCroppedImage: PropTypes.func.isRequired,
   }
 
   static defaultProps = {
@@ -52,6 +55,8 @@ class ReactThumbCropper extends Component {
     moveInterval: 10,
     cropAreaWidth: 350,
     cropAreaHeight: 350,
+    cropRadius: 128,
+    cropBackgroundColor: 'rgba(0, 0, 0, 0.3)',
     zoomStep: 10,
     defaultUploadedImageHeight: 500,
   }
@@ -119,31 +124,6 @@ class ReactThumbCropper extends Component {
       imagePositionTop: Math.floor( (height - this.props.cropAreaHeight) / 2 ) * -1,
       imagePositionLeft: Math.floor( (width - this.props.cropAreaWidth) / 2 ) * -1,
     }
-  }
-
-  renderImageUploader() {
-    return <div
-      style={style}
-      className="reactThumbCropper_uploader"
-      onDragOver={::this.handleOnDragOver}
-      onDrop={::this.handleOnDrop}
-    >
-      <input
-        style={{
-          display: 'none',
-        }}
-        type="file"
-        className="reactThumbCropper_inputFile"
-        id="reactThumbCropper_inputFile"
-        multiple={false}
-        onChange={::this.handleFileSelect}
-      />
-      <label
-        style={{cursor: 'pointer'}}
-        htmlFor="reactThumbCropper_inputFile">
-        {this.props.dropHolder}
-      </label>
-    </div>
   }
 
   handleMoveUp() {
@@ -340,6 +320,47 @@ class ReactThumbCropper extends Component {
     this.setState({...initState})
   }
 
+  handleCrop() {
+    const {
+      cropAreaWidth,
+      cropAreaHeight,
+      cropRadius,
+    } = this.props
+    const {
+      imageSrc,
+      imageWidthInit,
+      imageWidthCurrent,
+      imageHeightInit,
+      imageHeightCurrent,
+      imagePositionTop,
+      imagePositionLeft,
+    } = this.state
+    const canvas = document.createElement('canvas')
+    canvas.width = cropRadius * 2
+    canvas.height = cropRadius * 2
+    const context = canvas.getContext('2d')
+    const image = new Image()
+    image.onload = () => {
+      const zoomKf = imageHeightInit / imageHeightCurrent
+      const sx = Math.floor((imagePositionLeft * -1 + (cropAreaWidth / 2 - cropRadius)) * zoomKf)
+      const sy = Math.floor((imagePositionTop * -1 + (cropAreaHeight / 2 - cropRadius)) * zoomKf)
+      const sWidth = Math.floor(canvas.width * zoomKf)
+      const sHeight = Math.floor(canvas.height * zoomKf)
+      const dx = 0
+      const dy = 0
+      const dWidth = canvas.width
+      const dHeight = canvas.height
+      context.save();
+      context.beginPath();
+      context.arc(cropRadius, cropRadius, cropRadius, 0, Math.PI*2, true);
+      context.closePath();
+      context.clip();
+      context.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+      this.props.setCroppedImage(canvas.toDataURL('image/png'))
+    }
+    image.src = imageSrc
+  }
+
   renderImageCropper() {
     return <div className="reactThumbCropper_cropper">
         <div
@@ -351,6 +372,24 @@ class ReactThumbCropper extends Component {
         }}
         className="reactThumbCropper_image"
       >
+        <svg
+          width={this.props.cropAreaWidth}
+          height={this.props.cropAreaHeight}
+          fill={this.props.cropBackgroundColor}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 100
+          }}
+        >
+          <path d={`
+              M ${Math.floor(this.props.cropAreaWidth / 2)}, ${Math.floor(this.props.cropAreaHeight / 2)}
+              m -${this.props.cropRadius}, 0
+              a ${this.props.cropRadius},${this.props.cropRadius} 0 1,0 ${this.props.cropRadius*2},0
+              a ${this.props.cropRadius},${this.props.cropRadius} 0 1,0 -${this.props.cropRadius*2},0
+          `} />
+        </svg>
         <img
           style={{
             position: 'absolute',
@@ -401,8 +440,36 @@ class ReactThumbCropper extends Component {
           className="reactThumbCropper_reset"
           onClick={::this.handleReset}
         >Удалить</button>
-        <button>Обрезать</button>
+        <button
+          className="reactThumbCropper_crop"
+          onClick={::this.handleCrop}
+        >Обрезать</button>
       </div>
+    </div>
+  }
+
+  renderImageUploader() {
+    return <div
+      style={style}
+      className="reactThumbCropper_uploader"
+      onDragOver={::this.handleOnDragOver}
+      onDrop={::this.handleOnDrop}
+    >
+      <input
+        style={{
+          display: 'none',
+        }}
+        type="file"
+        className="reactThumbCropper_inputFile"
+        id="reactThumbCropper_inputFile"
+        multiple={false}
+        onChange={::this.handleFileSelect}
+      />
+      <label
+        style={{cursor: 'pointer'}}
+        htmlFor="reactThumbCropper_inputFile">
+        {this.props.dropHolder}
+      </label>
     </div>
   }
 
