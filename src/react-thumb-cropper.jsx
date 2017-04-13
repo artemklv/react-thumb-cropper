@@ -28,7 +28,9 @@ const initState = {
   imagePositionTop: null,
   imagePositionLeft: null,
   imageRotate: ROTATE_0,
-  isImageRotating: false
+  isImageRotating: false,
+  isMouseDown: false,
+  cursorPosition: null,
 }
 
 class ReactThumbCropper extends Component {
@@ -178,8 +180,12 @@ class ReactThumbCropper extends Component {
       imageHeightCurrent,
       imagePositionTop,
       imagePositionLeft,
-    } = {...this.state}
-    const { moveStep, cropAreaHeight, cropAreaWidth } = this.props
+    } = this.state
+    const {
+      moveStep,
+      cropAreaHeight,
+      cropAreaWidth
+    } = this.props
     switch(direction) {
       case DIRECTION_UP:
         this.setState({
@@ -204,6 +210,34 @@ class ReactThumbCropper extends Component {
       default:
         break
     }
+  }
+
+  _moveImageRelative(x, y) {
+    const {
+      imageWidthCurrent,
+      imageHeightCurrent,
+      imagePositionTop,
+      imagePositionLeft,
+      cursorPosition,
+    } = this.state
+    const {
+      cropAreaHeight,
+      cropAreaWidth,
+    } = this.props
+    const top = imagePositionTop + (y - cursorPosition.y)
+    const left = imagePositionLeft + (x - cursorPosition.x)
+    if (
+      top > 0
+      || left > 0
+      || imageHeightCurrent - (top * -1 + cropAreaHeight) < 0
+      || imageWidthCurrent - (left * -1 + cropAreaWidth) < 0
+    ) {
+      return
+    }
+    this.setState({
+      imagePositionTop: top,
+      imagePositionLeft: left,
+    })
   }
 
   _getCenter() {
@@ -377,6 +411,54 @@ class ReactThumbCropper extends Component {
     image.src = imageSrc
   }
 
+  handleOnWheel(event) {
+    event.preventDefault()
+    let zoomType = ZOOM_IN
+    if (event.deltaY > 0) {
+      zoomType = ZOOM_OUT
+    }
+    this._zoom(zoomType)
+  }
+
+  handleOnMouseDown(event) {
+    if (!this.state.cursorPosition) {
+      this.setState({
+        cursorPosition: {
+          x: event.pageX,
+          y: event.pageY,
+        }
+      })
+    }
+  }
+
+  handleOnMouseUp() {
+    if (this.state.cursorPosition) {
+      this.setState({
+        cursorPosition: null
+      })
+    }
+  }
+
+  handleOnMouseLeave() {
+    if (this.state.cursorPosition) {
+      this.setState({
+        cursorPosition: null
+      })
+    }
+  }
+
+  handleOnMouseMove(event) {
+    if (this.state.cursorPosition) {
+      this._moveImageRelative(event.pageX, event.pageY)
+      this.setState({
+        cursorPosition: {
+          x: event.pageX,
+          y: event.pageY,
+        }
+      })
+    }
+  }
+
   renderImageCropper() {
     return <div className="reactThumbCropper_cropper">
         <div
@@ -386,6 +468,11 @@ class ReactThumbCropper extends Component {
           position: 'relative',
           overflow: 'hidden',
         }}
+        onWheel={::this.handleOnWheel}
+        onMouseMove={::this.handleOnMouseMove}
+        onMouseLeave={::this.handleOnMouseLeave}
+        onMouseDown={::this.handleOnMouseDown}
+        onMouseUp={::this.handleOnMouseUp}
         className="reactThumbCropper_image"
       >
         <svg style={{
