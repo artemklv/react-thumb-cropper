@@ -19,6 +19,18 @@ const ROTATE_90   = 90
 const ROTATE_180  = 180
 const ROTATE_270  = 270
 
+const initState = {
+  imageSrc: null,
+  imageWidthInit: null,
+  imageWidthCurrent: null,
+  imageHeightInit: null,
+  imageHeightCurrent: null,
+  imagePositionTop: null,
+  imagePositionLeft: null,
+  imageRotate: ROTATE_0,
+  isImageRotating: false
+}
+
 class ReactThumbCropper extends Component {
 
   static propsTypes = {
@@ -46,17 +58,7 @@ class ReactThumbCropper extends Component {
 
   constructor(props) {
     super(...arguments)
-    this.state = {
-      imageSrc: null,
-      imageWidthInit: null,
-      imageWidthCurrent: null,
-      imageHeightInit: null,
-      imageHeightCurrent: null,
-      imagePositionTop: null,
-      imagePositionLeft: null,
-      imageRotate: ROTATE_0,
-      isImageRotating: false
-    }
+    this.state = initState
     this.image = null
     this.moveTimerId = null
     this._moveImage = this._moveImage.bind(this)
@@ -303,6 +305,11 @@ class ReactThumbCropper extends Component {
     })
   }
 
+  handleReset() {
+    this.image = null
+    this.setState({...initState})
+  }
+
   renderImageCropper() {
     return <div className="reactThumbCropper_cropper">
         <div
@@ -323,7 +330,7 @@ class ReactThumbCropper extends Component {
           }}
           src={this.state.imageSrc} />
       </div>
-      <div className="reactThumbCropper_controls">
+      <div className="reactThumbCropper_navs">
         <button
           className="reactThumbCropper_up"
           onMouseDown={::this.handleMoveUp}
@@ -358,6 +365,13 @@ class ReactThumbCropper extends Component {
           onClick={::this.rotate}
           disabled={this.state.isImageRotating}
         >Повернуть</button>
+      </div>
+      <div className="reactThumbCropper_controls">
+        <button
+          className="reactThumbCropper_reset"
+          onClick={::this.handleReset}
+        >Удалить</button>
+        <button>Обрезать</button>
       </div>
     </div>
   }
