@@ -14,6 +14,11 @@ const DIRECTION_RIGHT  = 'right'
 const ZOOM_IN   = 'zoom_in'
 const ZOOM_OUT  = 'zoom_out'
 
+const ROTATE_0    = 0
+const ROTATE_90   = 90
+const ROTATE_180  = 180
+const ROTATE_270  = 270
+
 class ReactThumbCropper extends Component {
 
   static propsTypes = {
@@ -49,7 +54,10 @@ class ReactThumbCropper extends Component {
       imageHeightCurrent: null,
       imagePositionTop: null,
       imagePositionLeft: null,
+      imageRotate: ROTATE_0,
+      isImageRotating: false
     }
+    this.image = null
     this.moveTimerId = null
     this._moveImage = this._moveImage.bind(this)
     this._moveImageStop = this._moveImageStop.bind(this)
@@ -64,13 +72,13 @@ class ReactThumbCropper extends Component {
     if (event.dataTransfer.files.length) {
       const file = event.dataTransfer.files[0]
       const fileReader = new FileReader()
-      const image = new Image()
+      this.image = new Image()
       fileReader.readAsDataURL(file)
       fileReader.onloadend = () => {
-        image.src = fileReader.result
-        const positionState = this._getUploadedImagePosition(image.width, image.height)
+        this.image.src = fileReader.result
+        const positionState = this._getUploadedImagePosition(this.image.width, this.image.height)
         this.setState({
-          imageSrc: fileReader.result,
+          imageSrc: this.image.src,
           ...positionState
         })
       }
@@ -202,32 +210,98 @@ class ReactThumbCropper extends Component {
       default:
         return
     }
-    if (heightNew > imageHeightInit || heightNew < cropAreaHeight) {
+    const widthNew = Math.floor(imageWidthInit / imageHeightInit * heightNew)
+    if (
+      heightNew > imageHeightInit
+      || heightNew < cropAreaHeight
+      || widthNew > imageWidthInit
+      || widthNew < cropAreaWidth
+    ) {
       return
     }
-    const widthNew = Math.floor(imageWidthInit / imageHeightInit * heightNew)
+    let top = Math.min(imagePositionTop - ((heightNew - imageHeightCurrent) / 2), 0)
+    if ( (heightNew - cropAreaHeight) * -1 > top ) {
+      top = (heightNew - cropAreaHeight) * -1
+    }
+    let left = Math.min(imagePositionLeft - ((widthNew - imageWidthCurrent) / 2), 0)
+    if ( (widthNew - cropAreaWidth) * -1 > left ) {
+      left = (widthNew - cropAreaWidth) * -1
+    }
     this.setState({
       imageHeightCurrent: heightNew,
       imageWidthCurrent: widthNew,
-      imagePositionTop: imagePositionTop - ((heightNew - imageHeightCurrent) / 2),
-      imagePositionLeft: imagePositionLeft - ((widthNew - imageWidthCurrent) / 2),
+      imagePositionTop: top,
+      imagePositionLeft: left,
     })
   }
 
   handleZoomIn() {
-    this._zoom(ZOOM_IN)
-    // this.moveTimerId = setInterval(() => {
-    //   this._zoom(ZOOM_IN)
-    // }, this.props.moveInterval)
+    this.moveTimerId = setInterval(() => {
+      this._zoom(ZOOM_IN)
+    }, this.props.moveInterval)
   }
 
   handleZoomOut() {
-    this._zoom(ZOOM_OUT)
-    // this.moveTimerId = setInterval(() => {
-    //   this._zoom(ZOOM_OUT)
-    // }, this.props.moveInterval)
+    this.moveTimerId = setInterval(() => {
+      this._zoom(ZOOM_OUT)
+    }, this.props.moveInterval)
   }
 
+  rotate() {
+    this.setState({
+      isImageRotating: true
+    })
+    const {
+      imageWidthInit,
+      imageHeightInit,
+      imageHeightCurrent,
+      imageWidthCurrent,
+      imagePositionTop,
+      imagePositionLeft,
+      imageRotate,
+    } = this.state
+    const canvas = document.createElement('canvas')
+    canvas.width = imageHeightInit
+    canvas.height = imageWidthInit
+    const context = canvas.getContext('2d')
+    context.save()
+    let rotate
+    switch (imageRotate) {
+      default:
+      case ROTATE_0:
+        rotate = ROTATE_90
+        context.rotate(rotate*Math.PI/180)
+        context.drawImage(this.image, 0, -this.image.height)
+        break
+      case ROTATE_90:
+        rotate = ROTATE_180
+        context.rotate(rotate*Math.PI/180)
+        context.drawImage(this.image, -this.image.width, -this.image.height)
+        break
+      case ROTATE_180:
+        rotate = ROTATE_270
+        context.rotate(rotate*Math.PI/180)
+        context.drawImage(this.image, -this.image.width, 0)
+        break
+      case ROTATE_270:
+        rotate = ROTATE_0
+        context.rotate(rotate*Math.PI/180)
+        context.drawImage(this.image, 0, 0)
+        break
+    }
+    context.restore()
+    this.setState({
+      imageSrc: canvas.toDataURL(),
+      imageWidthInit: imageHeightInit,
+      imageHeightInit: imageWidthInit,
+      imageWidthCurrent: imageHeightCurrent,
+      imageHeightCurrent: imageWidthCurrent,
+      imagePositionTop: imagePositionLeft,
+      imagePositionLeft: imagePositionTop,
+      imageRotate: rotate,
+      isImageRotating: false,
+    })
+  }
 
   renderImageCropper() {
     return <div className="reactThumbCropper_cropper">
@@ -271,15 +345,18 @@ class ReactThumbCropper extends Component {
           onMouseUp={this._moveImageStop}
         >Вправо</button>
         <button
-          onClick={::this.handleZoomIn}
           className="reactThumbCropper_zoomIn"
+          onMouseDown={::this.handleZoomIn}
+          onMouseUp={this._moveImageStop}
         >Увеличить</button>
         <button
-          onClick={::this.handleZoomOut}
           className="reactThumbCropper_zoomOut"
+          onMouseDown={::this.handleZoomOut}
+          onMouseUp={this._moveImageStop}
         >Уменьшить</button>
         <button
-
+          onClick={::this.rotate}
+          disabled={this.state.isImageRotating}
         >Повернуть</button>
       </div>
     </div>
