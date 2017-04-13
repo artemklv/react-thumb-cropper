@@ -44,8 +44,17 @@ class ReactThumbCropper extends Component {
     cropBackgroundColor: PropTypes.string,
     zoomStep: PropTypes.number,
     defaultUploadedImageHeight: PropTypes.number,
-    dropHolder: PropTypes.element.isRequired,
     setCroppedImage: PropTypes.func.isRequired,
+    dropHolder: PropTypes.element.isRequired,
+    holderNavUp: PropTypes.element,
+    holderNavDown: PropTypes.element,
+    holderNavLeft: PropTypes.element,
+    holderNavRight: PropTypes.element,
+    holderNavZoomIn: PropTypes.element,
+    holderNavZoomOut: PropTypes.element,
+    holderNavRotate: PropTypes.element,
+    holderControlsReset: PropTypes.element,
+    holderControlsCrop: PropTypes.element,
   }
 
   static defaultProps = {
@@ -56,9 +65,18 @@ class ReactThumbCropper extends Component {
     cropAreaWidth: 350,
     cropAreaHeight: 350,
     cropRadius: 128,
-    cropBackgroundColor: 'rgba(0, 0, 0, 0.3)',
+    cropBackgroundColor: 'rgba(256, 256, 256, 0.7)',
     zoomStep: 10,
     defaultUploadedImageHeight: 500,
+    holderNavUp: <span>&#129029;</span>,
+    holderNavDown: <span>&#129031;</span>,
+    holderNavLeft: <span>&#129028;</span>,
+    holderNavRight: <span>&#129030;</span>,
+    holderNavZoomIn: <span>&#10133;</span>,
+    holderNavZoomOut: <span>&#10134;</span>,
+    holderNavRotate: <span>&#8635;</span>,
+    holderControlsReset: <span>reset</span>,
+    holderControlsCrop: <span>crop</span>,
   }
 
   constructor(props) {
@@ -328,8 +346,6 @@ class ReactThumbCropper extends Component {
     } = this.props
     const {
       imageSrc,
-      imageWidthInit,
-      imageWidthCurrent,
       imageHeightInit,
       imageHeightCurrent,
       imagePositionTop,
@@ -372,23 +388,33 @@ class ReactThumbCropper extends Component {
         }}
         className="reactThumbCropper_image"
       >
-        <svg
-          width={this.props.cropAreaWidth}
-          height={this.props.cropAreaHeight}
-          fill={this.props.cropBackgroundColor}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            zIndex: 100
-          }}
-        >
-          <path d={`
-              M ${Math.floor(this.props.cropAreaWidth / 2)}, ${Math.floor(this.props.cropAreaHeight / 2)}
-              m -${this.props.cropRadius}, 0
-              a ${this.props.cropRadius},${this.props.cropRadius} 0 1,0 ${this.props.cropRadius*2},0
-              a ${this.props.cropRadius},${this.props.cropRadius} 0 1,0 -${this.props.cropRadius*2},0
-          `} />
+        <svg style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }} width="350" height="350">
+          <defs>
+            <mask
+              id="mask" x="0" y="0"
+              width={this.props.cropAreaWidth}
+              height={this.props.cropAreaHeight}
+            >
+              <rect
+                x="0" y="0"
+                width={this.props.cropAreaWidth}
+                height={this.props.cropAreaHeight}
+                fill="#fff"
+              />
+              <circle cx="175" cy="175" r="128" />
+            </mask>
+          </defs>
+          <rect
+            x="0" y="0"
+            width={this.props.cropAreaWidth}
+            height={this.props.cropAreaHeight}
+            mask="url(#mask)"
+            fill={this.props.cropBackgroundColor}
+          />
         </svg>
         <img
           style={{
@@ -396,6 +422,7 @@ class ReactThumbCropper extends Component {
             top: this.state.imagePositionTop,
             left: this.state.imagePositionLeft,
             height: this.state.imageHeightCurrent,
+            zIndex: -1,
           }}
           src={this.state.imageSrc} />
       </div>
@@ -404,46 +431,46 @@ class ReactThumbCropper extends Component {
           className="reactThumbCropper_up"
           onMouseDown={::this.handleMoveUp}
           onMouseUp={this._moveImageStop}
-        >Верх</button>
+        >{this.props.holderNavUp}</button>
         <button
           className="reactThumbCropper_down"
           onMouseDown={::this.handleMoveDown}
           onMouseUp={this._moveImageStop}
-        >Вниз</button>
+        >{this.props.holderNavDown}</button>
         <button
           className="reactThumbCropper_left"
           onMouseDown={::this.handleMoveLeft}
           onMouseUp={this._moveImageStop}
-        >Влево</button>
+        >{this.props.holderNavLeft}</button>
         <button
           className="reactThumbCropper_right"
           onMouseDown={::this.handleMoveRight}
           onMouseUp={this._moveImageStop}
-        >Вправо</button>
+        >{this.props.holderNavRight}</button>
         <button
           className="reactThumbCropper_zoomIn"
           onMouseDown={::this.handleZoomIn}
           onMouseUp={this._moveImageStop}
-        >Увеличить</button>
+        >{this.props.holderNavZoomIn}</button>
         <button
           className="reactThumbCropper_zoomOut"
           onMouseDown={::this.handleZoomOut}
           onMouseUp={this._moveImageStop}
-        >Уменьшить</button>
+        >{this.props.holderNavZoomOut}</button>
         <button
           onClick={::this.rotate}
           disabled={this.state.isImageRotating}
-        >Повернуть</button>
+        >{this.props.holderNavRotate}</button>
       </div>
       <div className="reactThumbCropper_controls">
         <button
           className="reactThumbCropper_reset"
           onClick={::this.handleReset}
-        >Удалить</button>
+        >{this.props.holderControlsReset}</button>
         <button
           className="reactThumbCropper_crop"
           onClick={::this.handleCrop}
-        >Обрезать</button>
+        >{this.props.holderControlsCrop}</button>
       </div>
     </div>
   }
