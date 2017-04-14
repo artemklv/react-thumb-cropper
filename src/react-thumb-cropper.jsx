@@ -31,13 +31,13 @@ const initState = {
   isImageRotating: false,
   isMouseDown: false,
   cursorPosition: null,
+  errorMsg: null,
 }
 
 class ReactThumbCropper extends Component {
 
   static propsTypes = {
     maxSize: PropTypes.number,
-    minSize: PropTypes.number,
     moveStep: PropTypes.number,
     moveInterval: PropTypes.number,
     cropAreaWidth: PropTypes.number,
@@ -57,11 +57,13 @@ class ReactThumbCropper extends Component {
     holderNavRotate: PropTypes.element,
     holderControlsReset: PropTypes.element,
     holderControlsCrop: PropTypes.element,
+    errorImageMaxSize: PropTypes.func.isRequired,
+    errorImageWidthHeight: PropTypes.func.isRequired,
+    errorFileUpload: PropTypes.func.isRequired,
   }
 
   static defaultProps = {
     maxSize: 500000,
-    minSize: 1000,
     moveStep: 2,
     moveInterval: 10,
     cropAreaWidth: 350,
@@ -115,15 +117,54 @@ class ReactThumbCropper extends Component {
   }
 
   _uploadFile(file) {
+
+    if (file.size > this.props.maxSize) {
+      this.setState({
+        errorMsg: this.props.errorImageMaxSize(file.size, this.props.maxSize)
+      })
+      return
+    }
+
     const fileReader = new FileReader()
     this.image = new Image()
     fileReader.readAsDataURL(file)
     fileReader.onloadend = () => {
       this.image.src = fileReader.result
+    }
+    fileReader.onerror = () => {
+      if (this.props.errorFileUpload) {
+        this.setState({
+          errorMsg: this.props.errorFileUpload()
+        })
+      }
+    }
+    this.image.onload = () => {
+      let width = this.image.width
+      let height = this.image.height
+      if (
+        width < this.props.cropAreaWidth
+        || height < this.props.cropAreaHeight
+      ) {
+        this.setState({
+          errorMsg: this.props.errorImageWidthHeight(
+            width,
+            height,
+            this.props.cropAreaHeight,
+            this.props.cropAreaWidth,
+          )
+        })
+        return
+      }
       const positionState = this._getUploadedImagePosition(this.image.width, this.image.height)
       this.setState({
         imageSrc: this.image.src,
+        errorMsg: null,
         ...positionState
+      })
+    }
+    this.image.onerror = () => {
+      this.setState({
+        errorMsg: this.props.errorFileUpload()
       })
     }
   }
@@ -146,19 +187,23 @@ class ReactThumbCropper extends Component {
     }
   }
 
-  handleMoveUp() {
+  handleMoveUp(event) {
+    event.stopPropagation()
     this._moveImageStart(DIRECTION_UP)
   }
 
-  handleMoveDown() {
+  handleMoveDown(event) {
+    event.stopPropagation()
     this._moveImageStart(DIRECTION_DOWN)
   }
 
-  handleMoveLeft() {
+  handleMoveLeft(event) {
+    event.stopPropagation()
     this._moveImageStart(DIRECTION_LEFT)
   }
 
-  handleMoveRight() {
+  handleMoveRight(event) {
+    event.stopPropagation()
     this._moveImageStart(DIRECTION_RIGHT)
   }
 
@@ -299,19 +344,22 @@ class ReactThumbCropper extends Component {
     })
   }
 
-  handleZoomIn() {
+  handleZoomIn(event) {
+    event.stopPropagation()
     this.moveTimerId = setInterval(() => {
       this._zoom(ZOOM_IN)
     }, this.props.moveInterval)
   }
 
-  handleZoomOut() {
+  handleZoomOut(event) {
+    event.stopPropagation()
     this.moveTimerId = setInterval(() => {
       this._zoom(ZOOM_OUT)
     }, this.props.moveInterval)
   }
 
-  rotate() {
+  rotate(event) {
+    event.stopPropagation()
     this.setState({
       isImageRotating: true
     })
@@ -588,7 +636,15 @@ class ReactThumbCropper extends Component {
   }
 
   render() {
-    return <div className="reactThumbCropper">
+    return <div
+      style={{
+        userSelect: 'none',
+      }}
+      className="reactThumbCropper"
+    >
+      {!!this.state.errorMsg && <div className="reactThumbCropper_error">
+        {this.state.errorMsg}</div>
+      }
       {!this.state.imageSrc && ::this.renderImageUploader()}
       {!!this.state.imageSrc && ::this.renderImageCropper()}
     </div>

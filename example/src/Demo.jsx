@@ -25,8 +25,21 @@ export default class Demo extends Component {
     return (
       <div>
         <ReactThumbCropper
+          maxSize={5000000}
           dropHolder={<h1>Перетащите изображение</h1>}
           setCroppedImage={this.setThumbImage}
+          errorImageWidthHeight={function(w, h, dw, dh) {
+            return <span>
+              Загружаемое изображение не должно быть менее {dw} на {dh} пик. <br/>
+              Ваша изображение составляет {w} на {h} пик.
+            </span>
+          }}
+          errorFileUpload={function () {
+            return <span>Ошибка загрузки изображения</span>
+          }}
+          errorImageMaxSize={function (s, ds) {
+            return <span>Размер изображения превышает 5 мб.</span>
+          }}
         />
         <div style={{
           width: '256px',
