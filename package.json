@@ -1,7 +1,7 @@
 {
   "name": "react-thumb-cropper",
-  "version": "0.0.1",
-  "description": "react round thumb cropper",
+  "version": "0.1.0",
+  "description": "react circle thumbnail cropper",
   "main": "dist/react-thumb-cropper.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -13,8 +13,23 @@
     "build-example": "npm run build && webpack --config webpack.config.js",
     "start": "babel-node server.js"
   },
-  "author": "Artem Klevakin",
-  "license": "ISC",
+  "author": "Artem Klevakin <artemklv@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artemklv/react-thumb-cropper.git"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/artemklv/react-thumb-cropper",
+  "bugs": {
+    "url": "https://github.com/artemklv/react-thumb-cropper/issues"
+  },
+  "keywords": [
+    "react",
+    "react-component",
+    "circle",
+    "cropper",
+    "image"
+  ],
   "peerDependencies": {
     "react": "^15.5.3",
     "react-dom": "^15.5.3",
